@@ -1,0 +1,32 @@
+body{
+    font-family:sans-serif;
+    margin: 10px;
+}
+
+.circleCont {
+    padding: 30px;
+    max-width: 300px;   
+    vertical-align: top;
+    border: 1px solid #ccc;
+    padding: 30px;
+    margin: 0 20px 20px 0;
+}
+
+.btn:link,
+.btn:visited {
+    display:inline-block;
+    font-family: sans-serif;
+    font-size: 15px;
+    color: #fff;
+    text-decoration: none;
+    border-radius: 2px;
+    padding: 5px 29px;
+    margin-right:3px;
+    background-color: #22a86d;
+    vertical-align: top;
+}
+.btn:hover,
+.btn:active {
+    background-color: #39b17c;
+    text-decoration: none;
+}
