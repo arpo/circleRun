@@ -1,0 +1,117 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8">
+	<title>Circle run</title>
+	<style>
+		body{
+			font-family:sans-serif;
+			margin: 10px;
+		}
+
+		.circleCont {
+			padding: 30px;
+			max-width: 600px;
+			vertical-align: top;
+			border: 1px solid #ccc;
+			padding: 30px;
+			margin: 0 20px 20px 0;
+		}
+
+
+		.btn:link,
+		.btn:visited {
+			display:inline-block;
+			font-family: sans-serif;
+			font-size: 15px;
+			color: #fff;
+			text-decoration: none;
+			border-radius: 2px;
+			padding: 5px 29px;
+			margin-right:3px;
+			background-color: #22a86d;
+			vertical-align: top;
+		}
+		.btn:hover,
+		.btn:active {
+			background-color: #39b17c;
+			text-decoration: none;
+		}
+	</style>
+</head>
+<body>
+
+	<div class="circleCont">
+		<div id="circle1"></div>
+	</div>
+
+	<div id="circle2" style="width:300px;"></div>
+	<div id="circle3" style="width:200px;"></div>
+
+	<div>
+		<a class="btn play" href="javascript:">Play</a>
+		<a class="btn pause" href="javascript:">pause</a>
+		<a class="btn reset" href="javascript:">Reset</a>
+		<a class="btn rev" href="javascript:">Rev</a>
+	</div>
+
+	<script type="text/javascript" src="https://code.jquery.com/jquery-latest.min.js"></script>
+	<script type="text/javascript" src="NIBS.circlerun.js"></script>
+	<script type="text/javascript">
+
+		$(document).on('ready', function() {
+
+			$(document.body).on('click', '.reset', function (e) {
+				cr1.reset();
+			});
+
+			$(document.body).on('click', '.rev', function (e) {
+				e.preventDefault();
+				cr1.rev();
+			});
+
+			$(document.body).on('click', '.play', function (e) {
+				cr1.start();
+			});
+
+			$(document.body).on('click', '.pause', function (e) {
+				cr1.pause();
+			});
+
+		});
+
+		var cr1 = new NIBS.CircleRun({
+			targetId: 'circle1',
+			strokeColor: '#0066cc',
+			baseColor: '#c7eaec', //'transparent'
+			edgeColor: '#ffffff', //Omit to remove
+			edgeStrokeWidth: 1, //This value is in angels
+			strokeWidth: '30%', //Can alos be pixels, as an integer
+			mode: 'animate',
+			from: 0,
+			to: 260,
+			duration: 2,
+			autostart: true,
+			onTick: function (data) {
+				//c.l(data.progress);
+			},
+			onEnd: function () {
+				c.l('Ended');
+			}
+		});
+/*
+		var cr2 = new NIBS.CircleRun({
+			targetId: 'circle2',
+			strokeColor: '#BF2100',
+			baseColor: '#7F1600',
+			strokeWidth: 20
+		});
+
+		var cr3 = new NIBS.CircleRun({targetId: 'circle3'});*/
+
+	</script>
+
+
+</body>
+</html>
