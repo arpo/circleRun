@@ -1,22 +1,18 @@
 var NIBS = window.NIBS || {};
-var c = (console) ? console : {log: function () {}}; c.l = c.log;
 
 NIBS.CircleRun = function (data) {
 
-	var oThis = this; 
+	var that = this;
 
 	this.data = data;
-
 	this.startAngle = 0;
-
 	this.target = document.getElementById(data.targetId);
 	this.state = NIBS.CircleRun.states.at_start;
 	this.canvas = document.createElement('canvas');
 	this.canvas.id = data.targetId + '_canvas';
-	
+
 	this.setDim();
 	this.target.appendChild(this.canvas);
-
 	this.ctx = this.canvas.getContext('2d');
 
 	this.strokeColor = data.strokeColor || '#308DBF';
@@ -25,93 +21,196 @@ NIBS.CircleRun = function (data) {
 	this.edgeStrokeWidth = data.edgeStrokeWidth || 1;
 
 	this.mode = data.mode || 'seconds';
+	this.easeName = data.easeName || 'easeInOutQuart'; //See NIBS.CircleRun.ease
 	this.onEnd = data.onEnd || function () {};
 	this.onTick = data.onTick || function () {};
 	this.autostart = data.autostart;
 	this.animData = {};
 
-	this._strokeWidth = (this.canvas.width / 2) * 0.1;
-	
-	oThis.setStroke();
+	this.strokeWidth = (this.canvas.width / 2) * 0.1;
 
-	if (oThis.mode === 'seconds') {
-		oThis.paintClock();
+	that.setStroke();
+
+	if (that.mode === 'seconds') {
+		that.paintClock();
 		this.start();
 	}
 
-	if (oThis.mode === 'animate') {
-		oThis.animData.from = data.from;
-		oThis.animData.to = data.to;
-		oThis.animData.duration = data.duration;
-		oThis.animData.frames = [];
-		oThis.animData.frames.length = 0;
-		oThis.animData.currFrame = 0;
-		oThis.calcFrames();
-		oThis.paint(oThis.animData.frames[0]);
+	if (that.mode === 'animate') {
+		that.animData.from = data.from;
+		that.animData.to = data.to;
+		that.animData.duration = data.duration;
+		that.animData.frames = [];
+		that.animData.frames.length = 0;
+		that.animData.currFrame = 0;
+		that.calcFrames();
+		that.paint(that.animData.frames[0]);
 
 		if (this.autostart) this.start();
 	}
 
+	function eventsManagment() {
 
-	function events_managment(){
-	    this.events = {};
-	    this.addEvent = function(node, event_, func){
-	        if(node.addEventListener){
-	            if(event_ in this.events){
-	                node.addEventListener(event_, function(){
-	                    func(node, event_);
-	                    this.events[event_](win_doc, event_);
-	                }, true);
-	            }else{
-	                node.addEventListener(event_, function(){
-	                    func(node, event_);
-	                }, true);
-	            }
-	            this.events[event_] = func;
-	        }else if(node.attachEvent){
+		this.events = {};
+		this.addEvent = function (node, event_, func) {
+			if (node.addEventListener) {
+				if (event_ in this.events) {
+					node.addEventListener(event_, function () {
+						func(node, event_);
+						this.events[event_](win_doc, event_);
+					}, true);
+				} else {
+					node.addEventListener(event_, function () {
+						func(node, event_);
+					}, true);
+				}
+				this.events[event_] = func;
+			} else if (node.attachEvent) {
 
-	            var ie_event = 'on' + event_;
-	            if(ie_event in this.events){
-	                node.attachEvent(ie_event, function(){
-	                    func(node, ie_event);
-	                    this.events[ie_event]();
-	                });
-	            }else{
-	                node.attachEvent(ie_event, function(){
-	                    func(node, ie_event);
-	                });
-	            }
-	            this.events[ie_event] = func;
-	        }
-	    }
-	    this.removeEvent = function(node, event_){
-	        if(node.removeEventListener){
-	            node.removeEventListener(event_, this.events[event_], true);
-	            this.events[event_] = null;
-	            delete this.events[event_];
-	        }else if(node.detachEvent){
-	            node.detachEvent(event_, this.events[event_]);
-	            this.events[event_] = null;
-	            delete this.events[event_];
-	        }
-	    }
+				var ie_event = 'on' + event_;
+				if (ie_event in this.events) {
+					node.attachEvent(ie_event, function () {
+						func(node, ie_event);
+						this.events[ie_event]();
+					});
+				} else {
+					node.attachEvent(ie_event, function () {
+						func(node, ie_event);
+					});
+				}
+				this.events[ie_event] = func;
+			}
+		}
+		this.removeEvent = function (node, event_) {
+			if (node.removeEventListener) {
+				node.removeEventListener(event_, this.events[event_], true);
+				this.events[event_] = null;
+				delete this.events[event_];
+			} else if (node.detachEvent) {
+				node.detachEvent(event_, this.events[event_]);
+				this.events[event_] = null;
+				delete this.events[event_];
+			}
+		}
+
 	}
 
-	var EM = new events_managment();
+	var EM = new eventsManagment();
 
-	EM.addEvent(window, 'resize', function(win,doc, event_){
+	EM.addEvent(window, 'resize', function (win, doc, event_) {
 
-	    oThis.setDim();
-	    oThis.setStroke();
+		that.setDim();
+		that.setStroke();
 
-	    if (oThis.state !== NIBS.CircleRun.states.running) {
-	    	oThis.paint(oThis.animData.frames[oThis.animData.currFrame]);
-	    }
+		if (that.state !== NIBS.CircleRun.states.running) {
+			that.paint(that.animData.frames[that.animData.currFrame]);
+		}
 
 	});
 
-	
 };
+
+NIBS.CircleRun.ease = {
+	linearTween: function(t, b, c, d) {
+		return c * t / d + b;
+	},
+	easeInQuad: function(t, b, c, d) {
+		t /= d;
+		return c * t * t + b;
+	},
+	easeOutQuad: function(t, b, c, d) {
+		t /= d;
+		return -c * t * (t - 2) + b;
+	},
+	easeInOutQuad: function(t, b, c, d) {
+		t /= d / 2;
+		if (t < 1) return c / 2 * t * t + b;
+		t--;
+		return -c / 2 * (t * (t - 2) - 1) + b;
+	},
+	easeInCubic: function(t, b, c, d) {
+		t /= d;
+		return c * t * t * t + b;
+	},
+	easeOutCubic: function(t, b, c, d) {
+		t /= d;
+		t--;
+		return c * (t * t * t + 1) + b;
+	},
+	easeInOutCubic: function(t, b, c, d) {
+		t /= d / 2;
+		if (t < 1) return c / 2 * t * t * t + b;
+		t -= 2;
+		return c / 2 * (t * t * t + 2) + b;
+	},
+	easeInQuart: function(t, b, c, d) {
+		t /= d;
+		return c * t * t * t * t + b;
+	},
+	easeOutQuart: function(t, b, c, d) {
+		t /= d;
+		t--;
+		return -c * (t * t * t * t - 1) + b;
+	},
+	easeInOutQuart: function(t, b, c, d) {
+		t /= d / 2;
+		if (t < 1) return c / 2 * t * t * t * t + b;
+		t -= 2;
+		return -c / 2 * (t * t * t * t - 2) + b;
+	},
+	easeInQuint: function(t, b, c, d) {
+		t /= d;
+		return c * t * t * t * t * t + b;
+	},
+	easeOutQuint: function(t, b, c, d) {
+		t /= d;
+		t--;
+		return c * (t * t * t * t * t + 1) + b;
+	},
+	easeInOutQuint: function(t, b, c, d) {
+		t /= d / 2;
+		if (t < 1) return c / 2 * t * t * t * t * t + b;
+		t -= 2;
+		return c / 2 * (t * t * t * t * t + 2) + b;
+	},
+	easeInSine: function(t, b, c, d) {
+		return -c * cos(t / d * (PI / 2)) + c + b;
+	},
+	easeOutSine: function(t, b, c, d) {
+		return c * sin(t / d * (PI / 2)) + b;
+	},
+	easeInOutSine: function(t, b, c, d) {
+		return -c / 2 * (cos(PI * t / d) - 1) + b;
+	},
+	easeInExpo: function(t, b, c, d) {
+		return c * pow(2, 10 * (t / d - 1)) + b;
+	},
+	easeOutExpo: function(t, b, c, d) {
+		return c * (-pow(2, -10 * t / d) + 1) + b;
+	},
+	easeInOutExpo: function(t, b, c, d) {
+		t /= d / 2;
+		if (t < 1) return c / 2 * pow(2, 10 * (t - 1)) + b;
+		t--;
+		return c / 2 * (-pow(2, -10 * t) + 2) + b;
+	},
+	easeInCirc: function(t, b, c, d) {
+		t /= d;
+		return -c * (sqrt(1 - t * t) - 1) + b;
+	},
+	easeOutCirc: function(t, b, c, d) {
+		t /= d;
+		t--;
+		return c * sqrt(1 - t * t) + b;
+	},
+	easeInOutCirc: function(t, b, c, d) {
+		t /= d / 2;
+		if (t < 1) return -c / 2 * (sqrt(1 - t * t) - 1) + b;
+		t -= 2;
+		return c / 2 * (sqrt(1 - t * t) + 1) + b;
+	}
+};
+
 
 NIBS.CircleRun.fps = 60;
 
@@ -122,204 +221,227 @@ NIBS.CircleRun.states = {
 	init: 'INIT',
 	running: 'RUNNING',
 	at_start: 'AT_START',
-	at_end: 'AT_END', 
+	at_end: 'AT_END',
 	destroyed: 'DESTROYED',
 	paused: 'PAUSED'
 
 };
 
 NIBS.CircleRun.prototype.setDim = function () {
-	
-	var oThis = this; 
-	oThis.canvas.width = oThis.target.offsetWidth;
-	oThis.canvas.height = oThis.target.offsetWidth;
 
-}
+	var that = this;
+	that.canvas.width = that.target.offsetWidth;
+	that.canvas.height = that.target.offsetWidth;
+
+};
 
 NIBS.CircleRun.prototype.setStroke = function () {
-	
-	var oThis = this; 
-	oThis.strokeWidth = oThis._strokeWidth; //Default value
 
-	if (typeof(oThis.data.strokeWidth) === 'string') {
-		oThis._strokeWidth = oThis.widthFromPercent(oThis.data.strokeWidth)
-	} else if (oThis.data.strokeWidth) {
-		oThis._strokeWidth = oThis.data.strokeWidth;
+	var that = this;
+	that.strokeWidth = that.strokeWidth; //Default value
+
+	if (typeof (that.data.strokeWidth) === 'string') {
+		that.strokeWidth = that.widthFromPercent(that.data.strokeWidth)
+	} else if (that.data.strokeWidth) {
+		that.strokeWidth = that.data.strokeWidth;
 	}
 
-}
+};
 
 NIBS.CircleRun.prototype.calcFrames = function () {
-	
-	var i,
-		oThis = this,
-		noOfFrames = oThis.animData.duration * NIBS.CircleRun.fps,
-		delta = oThis.animData.to - oThis.animData.from,
-		stepSize = delta / (noOfFrames - 1);
+
+	var that = this,
+		i,
+		noOfFrames = that.animData.duration * NIBS.CircleRun.fps,
+		delta = that.animData.to - that.animData.from,
+		stepSize = delta / (noOfFrames - 1),
+		prog,
+		easeVal,
+		frameVal;
+
+	var easeInOut = function(t, b, c, d) {
+		t /= d / 3;
+		if (t < 1.5) return c / 3 * t * t + b;
+		t--;
+		return -c / 3 * (t * (t - 3) - 1) + b;
+	};
 
 	for (i = 0; i < noOfFrames; i += 1) {
-		oThis.animData.frames.push(i * stepSize + oThis.startAngle);
+
+		prog = i / (noOfFrames - 1);
+		easeVal = NIBS.CircleRun.ease[that.easeName](prog, 0, 1, 1);
+		frameVal = that.animData.from + ((that.animData.to - that.animData.from) * easeVal)
+		that.animData.frames.push(frameVal);
+
 	}
 
-}
+};
 
 NIBS.CircleRun.prototype.start = function (percent) {
 
-	var oThis = this;
-	clearInterval(oThis.interval);
+	var that = this;
+	clearInterval(that.interval);
 
-	oThis.animData.currFrame = 0;
-	oThis.interval = setInterval(function () {
-		if (oThis.mode === 'seconds') {
-			oThis.paintClock();	
+	that.animData.currFrame = 0;
+	that.interval = setInterval(function () {
+
+		if (that.mode === 'seconds') {
+			that.paintClock();
 		}
 
-		if (oThis.mode === 'animate') {
-			oThis.animData.currFrame++;
-			oThis.paintAnimation();	
+		if (that.mode === 'animate') {
+			that.animData.currFrame++;
+			that.paintAnimation();
 		}
 
 	}, 1000 / NIBS.CircleRun.fps);
-}
+};
 
 NIBS.CircleRun.prototype.rev = function (percent) {
 
-	var oThis = this;
-	clearInterval(oThis.interval);
+	var that = this;
+	clearInterval(that.interval);
 
-	oThis.animData.currFrame = oThis.animData.frames.length;
-	oThis.interval = setInterval(function () {
-		
-		oThis.animData.currFrame--;
-		if (oThis.animData.currFrame > -1 ) {
-			oThis.paint(oThis.animData.frames[oThis.animData.currFrame]);
-			oThis.runOnTick();
+	that.animData.currFrame = that.animData.frames.length;
+	that.interval = setInterval(function () {
+
+		that.animData.currFrame--;
+		if (that.animData.currFrame > -1) {
+			that.paint(that.animData.frames[that.animData.currFrame]);
+			that.runOnTick();
 		} else {
-			oThis.pause();
-			oThis.runOnTick();
-			oThis.onEnd();
-			oThis.state = NIBS.CircleRun.states.at_start;
+			that.pause();
+			that.runOnTick();
+			that.onEnd();
+			that.state = NIBS.CircleRun.states.at_start;
 		}
 
 
 	}, 1000 / NIBS.CircleRun.fps);
-}
+};
 
 NIBS.CircleRun.prototype.runOnTick = function () {
 
-	var oThis = this;
-
-	oThis.onTick({
-		progress: (oThis.animData.currFrame / oThis.animData.frames.length),
-		angle: oThis.animData.frames[oThis.animData.currFrame],
-		frame: oThis.animData.currFrame
+	var that = this;
+	that.onTick({
+		progress: (that.animData.currFrame / that.animData.frames.length),
+		angle: that.animData.frames[that.animData.currFrame],
+		frame: that.animData.currFrame
 	});
 
-}
+};
 
 NIBS.CircleRun.prototype.paintAnimation = function () {
 
-	var oThis = this;
-
-	if (oThis.animData.frames.length > oThis.animData.currFrame) {
-		oThis.paint(oThis.animData.frames[oThis.animData.currFrame]);
-		oThis.runOnTick();
-		oThis.state = NIBS.CircleRun.states.running;
+	var that = this;
+	
+	if (that.animData.frames.length > that.animData.currFrame) {
+		that.paint(that.animData.frames[that.animData.currFrame]);
+		that.runOnTick();
+		that.state = NIBS.CircleRun.states.running;
 	} else {
-		oThis.pause();
-		oThis.runOnTick();
-		oThis.onEnd();
-		oThis.state = NIBS.CircleRun.states.at_end;
-		oThis.animData.currFrame = oThis.animData.frames.length - 1;
+		that.pause();
+		that.runOnTick();
+		that.onEnd();
+		that.state = NIBS.CircleRun.states.at_end;
+		that.animData.currFrame = that.animData.frames.length - 1;
 	}
 };
 
 NIBS.CircleRun.prototype.pause = function (percent) {
 
-	var oThis = this;
+	var that = this;
 	clearInterval(this.interval);
-	oThis.state = NIBS.CircleRun.states.paused;
+	that.state = NIBS.CircleRun.states.paused;
+
 }
 
 
 NIBS.CircleRun.prototype.destroy = function (percent) {
-	var oThis = this;
 
-	oThis.ctx.clearRect(0, 0, oThis.canvas.width, oThis.canvas.height);
-	clearInterval(oThis.interval);
-	oThis.state = NIBS.CircleRun.states.destroyed;
-}
+	var that = this;
+	that.ctx.clearRect(0, 0, that.canvas.width, that.canvas.height);
+	clearInterval(that.interval);
+	that.state = NIBS.CircleRun.states.destroyed;
+
+};
 
 NIBS.CircleRun.prototype.widthFromPercent = function (percent) {
 
-	var oThis = this,
+	var that = this,
 		pr = percent.split('%').join(''),
-		rv = (oThis.canvas.width / 2) * 0.1;
+		rv = (that.canvas.width / 2) * 0.1;
 
-	if(!isNaN(pr)) {
+	if (!isNaN(pr)) {
 		pr = parseFloat(pr) / 100;
-		var rv = (oThis.canvas.width / 2) * pr;
+		rv = (that.canvas.width / 2) * pr;
 		return rv;
 	}
 	return rv;
 
 };
 
-
 NIBS.CircleRun.prototype.drawArc = function (startFrom, endAt, o) {
 
-	var oThis = this;
+	var that = this;
 
 	o = o || {};
-	oThis.ctx.beginPath();
-	oThis.ctx.arc(oThis.canvas.width / 2, oThis.canvas.width / 2, oThis.canvas.width / 2 - (oThis._strokeWidth * 1.05 / 2), (startFrom - 90) * (Math.PI/180), (endAt - 90) * (Math.PI/180));
-	oThis.ctx.strokeStyle = o.strokeStyle || oThis.strokeColor;
-	oThis.ctx.lineWidth = o.lineWidth || 2;
-	oThis.ctx.stroke();
+	that.ctx.beginPath();
+	that.ctx.arc(that.canvas.width / 2, that.canvas.width / 2, that.canvas.width / 2 - (that.strokeWidth * 1.05 / 2), (startFrom - 90) * (Math.PI / 180), (endAt - 90) * (Math.PI / 180));
+	that.ctx.strokeStyle = o.strokeStyle || that.strokeColor;
+	that.ctx.lineWidth = o.lineWidth || 2;
+	that.ctx.stroke();
 
 };
 
 NIBS.CircleRun.prototype.paintClock = function () {
 
-	var oThis = this,
-		d = new Date(), k = 360 / 60,
+	var that = this,
+		d = new Date(),
+		k = 360 / 60,
 		seconds = d.getSeconds(),
 		end = seconds * k + (k * d.getMilliseconds() / 1000);
 
-	oThis.paint(end);
+	that.paint(end);
 
 };
 
-
 NIBS.CircleRun.prototype.reset = function () {
 
-	var oThis = this;
-	oThis.animData.currFrame = 0;
-	oThis.paint(oThis.animData.frames[oThis.animData.currFrame]);
-	oThis.state = NIBS.CircleRun.states.at_start;
+	var that = this;
+	that.animData.currFrame = 0;
+	that.paint(that.animData.frames[that.animData.currFrame]);
+	that.state = NIBS.CircleRun.states.at_start;
 
 };
 
 NIBS.CircleRun.prototype.paint = function (angle) {
 
-	//http://stackoverflow.com/questions/17861447/html5-canvas-drawimage-how-to-apply-antialiasing
-	var oThis = this;
-	oThis.ctx.clearRect(0, 0, oThis.canvas.width, oThis.canvas.height);
+	var that = this;
+	that.ctx.clearRect(0, 0, that.canvas.width, that.canvas.height);
 
-	if (oThis.baseColor !== 'transparent') {
-		oThis.drawArc (oThis.startAngle, 360 + oThis.startAngle, {strokeStyle: oThis.baseColor, lineWidth: oThis._strokeWidth});
+	if (that.baseColor !== 'transparent') {
+		that.drawArc(that.startAngle, 360 + that.startAngle, {
+			strokeStyle: that.baseColor,
+			lineWidth: that.strokeWidth
+		});
 	}
-	
 
-	if (oThis.edgeColor) {
-		var strokeWidth = oThis.edgeStrokeWidth;
 
-		if (angle < oThis.startAngle + 2) {
+	if (that.edgeColor) {
+		var strokeWidth = that.edgeStrokeWidth;
+
+		if (angle < that.startAngle + 2) {
 			strokeWidth = strokeWidth / 2;
 		}
-		oThis.drawArc (oThis.startAngle - (strokeWidth), angle + strokeWidth, {strokeStyle: oThis.edgeColor, lineWidth: oThis._strokeWidth});	
+		that.drawArc(that.startAngle - (strokeWidth), angle + strokeWidth, {
+			strokeStyle: that.edgeColor,
+			lineWidth: that.strokeWidth
+		});
 	}
-	
-	oThis.drawArc (oThis.startAngle, angle, {lineWidth: oThis._strokeWidth});
+
+	that.drawArc(that.startAngle, angle, {
+		lineWidth: that.strokeWidth
+	});
 
 };

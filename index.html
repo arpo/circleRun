@@ -22,6 +22,7 @@
 	<div id="circle2" style="width:200px;"></div>
 
 	<script type="text/javascript" src="https://code.jquery.com/jquery-latest.min.js"></script>
+	<script src="https://cdn.rawgit.com/arpo/trace.js/master/trace.min.js"></script>
 	<script type="text/javascript" src="CircleRun.js"></script>
 	<script type="text/javascript">
 
@@ -52,20 +53,19 @@
 			baseColor: '#c7eaec', //Can be 'transparent'
 			edgeColor: '#ffffff', //Omit to remove
 			edgeStrokeWidth: 1, //This value is in degrees
-			strokeWidth: '30%', //Can alos be pixels, as an integer
+			strokeWidth: '20%', //Can alos be pixels, as an integer
 			mode: 'animate', // seconds | animate
 			from: 0,
-			to: 260,
+			to: 270,
 			duration: 2,
 			autostart: true,
 			onTick: function (data) {
-				//c.l(data.progress);
+				trace('prog', data.progress);
 			},
 			onEnd: function () {
-				c.l('Ended');
+				console.log('Ended');
 			}
 		});
-
 		
 		var cr2 = new NIBS.CircleRun({
 			targetId: 'circle2',
@@ -76,7 +76,6 @@
 		});
 
 	</script>
-
 
 </body>
 </html>
