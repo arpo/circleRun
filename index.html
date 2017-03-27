@@ -14,9 +14,9 @@
 
 	<div>
 		<a class="btn play" href="javascript:">Play</a>
+		<a class="btn playTo" href="javascript:">Play to random angle</a>
 		<a class="btn pause" href="javascript:">pause</a>
 		<a class="btn reset" href="javascript:">Reset</a>
-		<a class="btn rev" href="javascript:">Rev</a>
 	</div>
 
 	<div id="circle2" style="width:200px;"></div>
@@ -32,17 +32,17 @@
 				cr1.reset();
 			});
 
-			$(document.body).on('click', '.rev', function (e) {
-				e.preventDefault();
-				cr1.rev();
-			});
-
 			$(document.body).on('click', '.play', function (e) {
 				cr1.start();
 			});
 
 			$(document.body).on('click', '.pause', function (e) {
 				cr1.pause();
+			});
+
+			$(document.body).on('click', '.playTo', function (e) {
+				var ang = Math.round(360 * Math.random());
+				cr1.to(ang);
 			});
 
 		});
@@ -57,13 +57,14 @@
 			mode: 'animate', // seconds | animate
 			from: 0,
 			to: 270,
-			duration: 2,
+			duration: 0.5,
 			autostart: true,
 			onTick: function (data) {
 				trace('prog', data.progress);
+				trace('angle', data.angle);
 			},
 			onEnd: function () {
-				console.log('Ended');
+				//console.log('Ended');
 			}
 		});
 		

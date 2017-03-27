@@ -4,54 +4,51 @@ NIBS.CircleRun = function (data) {
 
 	var that = this;
 
-	this.data = data;
-	this.startAngle = 0;
-	this.target = document.getElementById(data.targetId);
-	this.state = NIBS.CircleRun.states.at_start;
-	this.canvas = document.createElement('canvas');
-	this.canvas.id = data.targetId + '_canvas';
+	that.data = data;
+	that.startAngle = 0;
+	that.target = document.getElementById(data.targetId);
+	that.state = NIBS.CircleRun.states.at_start;
+	that.canvas = document.createElement('canvas');
+	that.canvas.id = data.targetId + '_canvas';
 
-	this.setDim();
-	this.target.appendChild(this.canvas);
-	this.ctx = this.canvas.getContext('2d');
+	that.setDim();
+	that.target.appendChild(that.canvas);
+	that.ctx = that.canvas.getContext('2d');
 
-	this.strokeColor = data.strokeColor || '#308DBF';
-	this.baseColor = data.baseColor || '#205E7F';
-	this.edgeColor = data.edgeColor || '';
-	this.edgeStrokeWidth = data.edgeStrokeWidth || 1;
+	that.duration = data.duration || 1;
 
-	this.mode = data.mode || 'seconds';
-	this.easeName = data.easeName || 'easeInOutQuart'; //See NIBS.CircleRun.ease
-	this.onEnd = data.onEnd || function () {};
-	this.onTick = data.onTick || function () {};
-	this.autostart = data.autostart;
-	this.animData = {};
+	that.strokeColor = data.strokeColor || '#308DBF';
+	that.baseColor = data.baseColor || '#205E7F';
+	that.edgeColor = data.edgeColor || '';
+	that.edgeStrokeWidth = data.edgeStrokeWidth || 1;
 
-	this.strokeWidth = (this.canvas.width / 2) * 0.1;
+	that.mode = data.mode || 'seconds';
+	that.easeName = data.easeName || 'easeInOutQuart'; //See NIBS.CircleRun.ease
+	that.onEnd = data.onEnd || function () {};
+	that.onTick = data.onTick || function () {};
+	that.autostart = data.autostart;
+	that.animData = {};
+
+	that.strokeWidth = (that.canvas.width / 2) * 0.1;
 
 	that.setStroke();
 
 	if (that.mode === 'seconds') {
 		that.paintClock();
-		this.start();
+		that.start();
 	}
 
 	if (that.mode === 'animate') {
-		that.animData.from = data.from;
-		that.animData.to = data.to;
-		that.animData.duration = data.duration;
-		that.animData.frames = [];
-		that.animData.frames.length = 0;
-		that.animData.currFrame = 0;
-		that.calcFrames();
-		that.paint(that.animData.frames[0]);
 
-		if (this.autostart) this.start();
+		that.setupAnimation(data.from, data.to, that.duration);
+		that.paint(that.animData.frames[0]);
+		if (that.autostart) that.start();
 	}
 
-	function eventsManagment() {
+	function EventsManagment() {
 
 		this.events = {};
+		
 		this.addEvent = function (node, event_, func) {
 			if (node.addEventListener) {
 				if (event_ in this.events) {
@@ -80,7 +77,8 @@ NIBS.CircleRun = function (data) {
 				}
 				this.events[ie_event] = func;
 			}
-		}
+		};
+
 		this.removeEvent = function (node, event_) {
 			if (node.removeEventListener) {
 				node.removeEventListener(event_, this.events[event_], true);
@@ -91,18 +89,18 @@ NIBS.CircleRun = function (data) {
 				this.events[event_] = null;
 				delete this.events[event_];
 			}
-		}
+		};
 
 	}
 
-	var EM = new eventsManagment();
+	var EM = new EventsManagment();
 
 	EM.addEvent(window, 'resize', function (win, doc, event_) {
 
 		that.setDim();
 		that.setStroke();
 
-		if (that.state !== NIBS.CircleRun.states.running) {
+		if (that.state !== NIBS.CircleRun.states.running && that.animData.frames) {
 			that.paint(that.animData.frames[that.animData.currFrame]);
 		}
 
@@ -227,6 +225,20 @@ NIBS.CircleRun.states = {
 
 };
 
+NIBS.CircleRun.prototype.setupAnimation = function (from, to, duration) {
+
+	var that = this;
+	duration = duration ||  that.duration;
+	that.animData.from = from;
+	that.animData.to = to;
+	that.animData.duration = duration;
+	that.animData.frames = [];
+	that.animData.frames.length = 0;
+	that.animData.currFrame = 0;
+	that.calcFrames();
+
+};
+
 NIBS.CircleRun.prototype.setDim = function () {
 
 	var that = this;
@@ -277,7 +289,7 @@ NIBS.CircleRun.prototype.calcFrames = function () {
 
 };
 
-NIBS.CircleRun.prototype.start = function (percent) {
+NIBS.CircleRun.prototype.start = function () {
 
 	var that = this;
 	clearInterval(that.interval);
@@ -297,36 +309,54 @@ NIBS.CircleRun.prototype.start = function (percent) {
 	}, 1000 / NIBS.CircleRun.fps);
 };
 
-NIBS.CircleRun.prototype.rev = function (percent) {
+NIBS.CircleRun.prototype.to = function (to, duration) {
 
 	var that = this;
+	duration = duration ||  that.duration;
 	clearInterval(that.interval);
+	var from = that.animData.frames[that.animData.currFrame];
+	that.setupAnimation(from, to, duration);
+	that.start();
 
-	that.animData.currFrame = that.animData.frames.length;
-	that.interval = setInterval(function () {
-
-		that.animData.currFrame--;
-		if (that.animData.currFrame > -1) {
-			that.paint(that.animData.frames[that.animData.currFrame]);
-			that.runOnTick();
-		} else {
-			that.pause();
-			that.runOnTick();
-			that.onEnd();
-			that.state = NIBS.CircleRun.states.at_start;
-		}
-
-
-	}, 1000 / NIBS.CircleRun.fps);
 };
+
+
+// NIBS.CircleRun.prototype.rev = function () {
+
+// 	var that = this;
+// 	clearInterval(that.interval);
+
+// 	that.animData.currFrame = that.animData.frames.length;
+// 	that.interval = setInterval(function () {
+
+// 		that.animData.currFrame--;
+// 		if (that.animData.currFrame > -1) {
+// 			that.paint(that.animData.frames[that.animData.currFrame]);
+// 			that.runOnTick();
+// 		} else {
+// 			that.pause();
+// 			that.runOnTick();
+// 			that.onEnd();
+// 			that.state = NIBS.CircleRun.states.at_start;
+// 		}
+
+
+// 	}, 1000 / NIBS.CircleRun.fps);
+// };
 
 NIBS.CircleRun.prototype.runOnTick = function () {
 
-	var that = this;
+	var that = this,
+		currFrame = that.animData.currFrame;
+
+	if (that.animData.currFrame > that.animData.frames.length - 1) {
+		currFrame = that.animData.frames.length - 1;
+	}
+
 	that.onTick({
 		progress: (that.animData.currFrame / that.animData.frames.length),
-		angle: that.animData.frames[that.animData.currFrame],
-		frame: that.animData.currFrame
+		angle: that.animData.frames[currFrame],
+		frame: currFrame
 	});
 
 };
@@ -351,7 +381,7 @@ NIBS.CircleRun.prototype.paintAnimation = function () {
 NIBS.CircleRun.prototype.pause = function (percent) {
 
 	var that = this;
-	clearInterval(this.interval);
+	clearInterval(that.interval);
 	that.state = NIBS.CircleRun.states.paused;
 
 }
